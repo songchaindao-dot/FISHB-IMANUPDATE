@@ -5,7 +5,7 @@
 [fishbowlz.com](https://fishbowlz.com) · Built on [Farcaster](https://farcaster.xyz) · By [The ZAO](https://zaoos.com)
 
 ---
-
+.
 ## What is FISHBOWLZ?
 
 Audio rooms where speakers rotate through a **hot seat** — like a fishbowl discussion. Everything is transcribed, archived, and searchable. Rooms persist after they end.
