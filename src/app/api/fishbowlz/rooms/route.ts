@@ -105,34 +105,44 @@ export async function POST(req: NextRequest) {
     if (err instanceof z.ZodError) {
       return NextResponse.json({ error: err.issues }, { status: 400 });
     }
+    if (err instanceof Error && err.message.includes('Missing SUPABASE env vars')) {
+      return NextResponse.json({ error: err.message }, { status: 503 });
+    }
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
   }
 }
 
 export async function GET(req: NextRequest) {
-  const { searchParams } = new URL(req.url);
-  const state = searchParams.get('state');
-  const limit = parseInt(searchParams.get('limit') ?? '50', 10);
+  try {
+    const { searchParams } = new URL(req.url);
+    const state = searchParams.get('state');
+    const limit = parseInt(searchParams.get('limit') ?? '50', 10);
 
-  let query = supabaseAdmin
-    .from('fishbowl_rooms')
-    .select('*')
-    .order('last_active_at', { ascending: false })
-    .limit(limit);
+    let query = supabaseAdmin
+      .from('fishbowl_rooms')
+      .select('*')
+      .order('last_active_at', { ascending: false })
+      .limit(limit);
 
-  if (state) {
-    // Filter by specific state if provided
-    query = query.eq('state', state);
-  } else {
-    // Default: return scheduled, active, and ended rooms (active first via last_active_at ordering)
-    query = query.in('state', ['scheduled', 'active', 'ended']);
+    if (state) {
+      // Filter by specific state if provided
+      query = query.eq('state', state);
+    } else {
+      // Default: return scheduled, active, and ended rooms (active first via last_active_at ordering)
+      query = query.in('state', ['scheduled', 'active', 'ended']);
+    }
+
+    const { data: rooms, error } = await query;
+
+    if (error) {
+      return NextResponse.json({ error: error.message }, { status: 500 });
+    }
+
+    return NextResponse.json({ rooms });
+  } catch (err) {
+    if (err instanceof Error && err.message.includes('Missing SUPABASE env vars')) {
+      return NextResponse.json({ error: err.message }, { status: 503 });
+    }
+    return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
   }
-
-  const { data: rooms, error } = await query;
-
-  if (error) {
-    return NextResponse.json({ error: error.message }, { status: 500 });
-  }
-
-  return NextResponse.json({ rooms });
 }

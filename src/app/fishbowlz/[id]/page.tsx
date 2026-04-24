@@ -655,6 +655,11 @@ function FishbowlRoomPageInner() {
   };
 
   const downloadJsonExport = () => {
+    if (!room) {
+      toast('Room details are not available yet', 'error');
+      return;
+    }
+
     const payload = {
       room: {
         id: room.id,
@@ -682,6 +687,11 @@ function FishbowlRoomPageInner() {
   };
 
   const openPdfReadyView = () => {
+    if (!room) {
+      toast('Room details are not available yet', 'error');
+      return;
+    }
+
     const popup = window.open('', '_blank');
     if (!popup) {
       toast('Please allow popups for PDF view', 'error');

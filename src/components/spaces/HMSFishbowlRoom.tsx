@@ -15,6 +15,7 @@ import {
   selectIsLocalVideoEnabled,
   selectScreenShareByPeerID,
 } from '@100mslive/react-sdk';
+import { useToast } from '@/components/ui/Toast';
 
 interface HMSFishbowlRoomProps {
   fishbowlRoomId: string;
@@ -59,6 +60,7 @@ function ScreenShareView({ peerId, peerName }: { peerId: string; peerName: strin
 
 function HMSFishbowlRoomInner({ fishbowlRoomId, fishbowlSlug, userFid, userName, role, isHost, onLeave, authFetch, participantCount, guestMode }: HMSFishbowlRoomProps) {
   const hmsActions = useHMSActions();
+  const { toast } = useToast();
   // Stable reference to avoid re-triggering effects when authFetch changes identity
   const apiFetchRef = useRef(authFetch || fetch);
   apiFetchRef.current = authFetch || fetch;
@@ -83,6 +85,7 @@ function HMSFishbowlRoomInner({ fishbowlRoomId, fishbowlSlug, userFid, userName,
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const recognitionRef = useRef<any>(null);
   const pendingTextRef = useRef('');
+  const canUseVideo = !guestMode && (isHost || role === 'speaker');
 
   const toggleTranscription = useCallback(() => {
     if (transcribing) {
@@ -93,7 +96,7 @@ function HMSFishbowlRoomInner({ fishbowlRoomId, fishbowlSlug, userFid, userName,
     }
 
     if (!('webkitSpeechRecognition' in window) && !('SpeechRecognition' in window)) {
-      alert('Speech recognition not supported in this browser. Try Chrome.');
+      toast('Speech recognition is not supported in this browser. Try Chrome.', 'error');
       return;
     }
 
@@ -291,12 +294,19 @@ function HMSFishbowlRoomInner({ fishbowlRoomId, fishbowlSlug, userFid, userName,
   };
 
   const toggleVideo = async () => {
+    if (!canUseVideo) {
+      toast('Camera is only available for hosts and speakers in this room.', 'info');
+      return;
+    }
+
     try {
       await hmsActions.setLocalVideoEnabled(!isLocalVideoEnabled);
     } catch (err) {
       console.error('Camera toggle failed:', err);
-      // Most likely the role doesn't have video publish permission
-      alert('Camera is not available. Your role may not have video permission, or camera access was denied.');
+      toast(
+        'Camera is not available. Your role may not have video permission, or camera access was denied.',
+        'error'
+      );
     }
   };
 
@@ -380,22 +390,24 @@ function HMSFishbowlRoomInner({ fishbowlRoomId, fishbowlSlug, userFid, userName,
                   <svg xmlns="http://www.w3.org/2000/svg" className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="2" x2="22" y1="2" y2="22"/><path d="M18.89 13.23A7.12 7.12 0 0 0 19 12v-2"/><path d="M5 10v2a7 7 0 0 0 12 5.29"/><path d="M15 9.34V5a3 3 0 0 0-5.68-1.33"/><path d="M9 9v3a3 3 0 0 0 5.12 2.12"/><line x1="12" x2="12" y1="19" y2="22"/></svg>
                 )}
               </button>
-              <button
-                onClick={toggleVideo}
-                className={`p-2 rounded-full transition-colors ${
-                  isLocalVideoEnabled
-                    ? 'bg-gold/20 text-gold'
-                    : 'bg-red-500/20 text-red-400'
-                }`}
-                aria-label={isLocalVideoEnabled ? 'Turn off camera' : 'Turn on camera'}
-                title={isLocalVideoEnabled ? 'Camera off' : 'Camera on'}
-              >
-                {isLocalVideoEnabled ? (
-                  <svg xmlns="http://www.w3.org/2000/svg" className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="m16 13 5.223 3.482a.5.5 0 0 0 .777-.416V7.87a.5.5 0 0 0-.752-.432L16 10.5"/><rect x="2" y="6" width="14" height="12" rx="2"/></svg>
-                ) : (
-                  <svg xmlns="http://www.w3.org/2000/svg" className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M10.66 6H14a2 2 0 0 1 2 2v2.34l1 1L22 8v8"/><path d="M16 16a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h2"/><line x1="2" x2="22" y1="2" y2="22"/></svg>
-                )}
-              </button>
+              {canUseVideo && (
+                <button
+                  onClick={toggleVideo}
+                  className={`p-2 rounded-full transition-colors ${
+                    isLocalVideoEnabled
+                      ? 'bg-gold/20 text-gold'
+                      : 'bg-red-500/20 text-red-400'
+                  }`}
+                  aria-label={isLocalVideoEnabled ? 'Turn off camera' : 'Turn on camera'}
+                  title={isLocalVideoEnabled ? 'Camera off' : 'Camera on'}
+                >
+                  {isLocalVideoEnabled ? (
+                    <svg xmlns="http://www.w3.org/2000/svg" className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="m16 13 5.223 3.482a.5.5 0 0 0 .777-.416V7.87a.5.5 0 0 0-.752-.432L16 10.5"/><rect x="2" y="6" width="14" height="12" rx="2"/></svg>
+                  ) : (
+                    <svg xmlns="http://www.w3.org/2000/svg" className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M10.66 6H14a2 2 0 0 1 2 2v2.34l1 1L22 8v8"/><path d="M16 16a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h2"/><line x1="2" x2="22" y1="2" y2="22"/></svg>
+                  )}
+                </button>
+              )}
               {toggleScreenShare && (
                 <button
                   onClick={() => toggleScreenShare()}

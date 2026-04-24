@@ -87,8 +87,15 @@ export default function FishbowlzPage() {
   const [rotationTimer, setRotationTimer] = useState(0); // 0 = off
   const [tokenGateAddress, setTokenGateAddress] = useState('');
   const [tokenGateMinBalance, setTokenGateMinBalance] = useState('1');
+  const backendConfigured = Boolean(process.env.NEXT_PUBLIC_SUPABASE_URL);
 
   useEffect(() => {
+    if (!backendConfigured) {
+      setRooms([]);
+      setLoading(false);
+      return;
+    }
+
     fetch('/api/fishbowlz/rooms')
       .then(r => r.json())
       .then(d => {
@@ -367,6 +374,11 @@ export default function FishbowlzPage() {
 
       {/* Room List */}
       <div className="p-4 sm:p-6">
+        {!backendConfigured && (
+          <div className="mb-4 rounded-xl border border-amber-500/30 bg-amber-500/10 px-4 py-3 text-sm text-amber-200">
+            Configure `NEXT_PUBLIC_SUPABASE_URL` and `SUPABASE_SERVICE_ROLE_KEY` in `.env.local` to enable live room data.
+          </div>
+        )}
         {loading ? (
           <div className="grid gap-3 sm:gap-4 grid-cols-1 md:grid-cols-2 lg:grid-cols-3">
             {[1, 2, 3, 4, 5, 6].map((i) => (
