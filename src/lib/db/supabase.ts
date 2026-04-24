@@ -15,12 +15,14 @@ export async function preloadEnv(): Promise<void> {
 
 export function getSupabaseAdmin(): SupabaseClient {
   if (!_supabaseAdmin) {
-    // Lazy-load ENV — preloadEnv() should have been called at server startup.
+    // Prefer the preloaded ENV module, but still fall back to process.env.
     // Falls back to process.env to avoid breaking if preload was skipped.
     const url = _envModule?.ENV.NEXT_PUBLIC_SUPABASE_URL ?? process.env.NEXT_PUBLIC_SUPABASE_URL;
     const key = _envModule?.ENV.SUPABASE_SERVICE_ROLE_KEY ?? process.env.SUPABASE_SERVICE_ROLE_KEY;
     if (!url || !key) {
-      throw new Error('Missing SUPABASE env vars — call preloadEnv() at startup or set process.env');
+      throw new Error(
+        'Missing SUPABASE env vars. Set NEXT_PUBLIC_SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY in .env.local.'
+      );
     }
     _supabaseAdmin = createClient(url, key);
   }
